@@ -1,7 +1,7 @@
 /*
- * WebSocketServer_LEDcontrol.ino
+ * pruebaWS.ino
  *
- *  Created on: 26.11.2015
+ *  Use https://github.com/Links2004/arduinoWebSockets
  *
  */
 
@@ -9,7 +9,9 @@
 
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
+
 #include <WebSocketsServer.h>
+
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <Hash.h>
@@ -19,9 +21,12 @@
 
 ESP8266WiFiMulti WiFiMulti;
 
+// listen webserver at port 80
 ESP8266WebServer server = ESP8266WebServer(80);
+// listen websocket at port 81
 WebSocketsServer webSocket = WebSocketsServer(81);
 
+//manage event
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) {
 
     switch(type) {
@@ -39,6 +44,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
             USE_SERIAL.printf("[%u] get Text: %s\n", num, payload);
             // broadcast del ok
             webSocket.broadcastTXT("Me llego");
+
+            //If we want to do something on esp8266
             // if(payload[0] == '#') {
             //     // we get RGB data
             //
@@ -69,7 +76,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         USE_SERIAL.flush();
         delay(1000);
     }
-
+    // if we want to do something on esp8266
     // pinMode(LED_RED, OUTPUT);
     // pinMode(LED_GREEN, OUTPUT);
     // pinMode(LED_BLUE, OUTPUT);
@@ -78,7 +85,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
     // digitalWrite(LED_GREEN, 1);
     // digitalWrite(LED_BLUE, 1);
 
-    WiFiMulti.addAP("wifi", "perlitalagatita");
+    //config wifi on esp8266 ssid and pass
+    WiFiMulti.addAP("*****", "**********");
 
     while(WiFiMulti.run() != WL_CONNECTED) {
         delay(100);
@@ -95,6 +103,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
     // handle index
     server.on("/", []() {
         // send index.html
+        // a simple web to change values of leds
+        // Use the console of webdevelopment tools to log messages
         server.send(200, "text/html", "<html><head><script>var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);connection.onopen = function () {  connection.send('Connect ' + new Date()); }; connection.onerror = function (error) {    console.log('WebSocket Error ', error);};connection.onmessage = function (e) {  console.log('Server: ', e.data);};function sendRGB() {  var r = parseInt(document.getElementById('r').value).toString(16);  var g = parseInt(document.getElementById('g').value).toString(16);  var b = parseInt(document.getElementById('b').value).toString(16);  if(r.length < 2) { r = '0' + r; }   if(g.length < 2) { g = '0' + g; }   if(b.length < 2) { b = '0' + b; }   var rgb = '#'+r+g+b;    console.log('RGB: ' + rgb); connection.send(rgb); }</script></head><body>LED Control:<br/><br/>R: <input id=\"r\" type=\"range\" min=\"0\" max=\"255\" step=\"1\" onchange=\"sendRGB();\" /><br/>G: <input id=\"g\" type=\"range\" min=\"0\" max=\"255\" step=\"1\" onchange=\"sendRGB();\" /><br/>B: <input id=\"b\" type=\"range\" min=\"0\" max=\"255\" step=\"1\" onchange=\"sendRGB();\" /><br/></body></html>");
     });
 
@@ -125,6 +135,7 @@ void loop() {
       ++value;
       msg = "ON ";
       msg += value;
+      // keep alive, server to everybody
       webSocket.broadcastTXT(msg);
     }
 }
